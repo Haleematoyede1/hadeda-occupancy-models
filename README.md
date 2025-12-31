@@ -8,7 +8,7 @@ models implemented within the spOccupancy framework.
 The code supports data preparation, model fitting, and result generation for the
 analyses used in the research project.
 
-## Data availability
+## Data availability.
 
 The processed datasets used in this study are archived in the University of Cape Town’s
 institutional research data repository, ZivaHub.
