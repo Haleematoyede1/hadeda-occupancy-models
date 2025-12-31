@@ -1,20 +1,23 @@
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
-
-# Data
-inputData/rawData/
-inputData/processedData/
-
-# Outputs
-outputData/
-
-# R
+# -------------------------
+# RStudio / R session files
+# -------------------------
 .Rhistory
 .RData
 .Rproj.user/
 
-# OS
+# -------------------------
+# Data (not tracked on GitHub)
+# -------------------------
+inputData/rawData/
+inputData/processedData/
+
+# -------------------------
+# Outputs (generated files)
+# -------------------------
+outputData/
+
+# -------------------------
+# Operating system files
+# -------------------------
 .DS_Store
 Thumbs.db
