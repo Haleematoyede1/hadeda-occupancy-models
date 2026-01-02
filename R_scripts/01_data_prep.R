@@ -1,6 +1,6 @@
 # ===============================================================
 # 01_data_prep.R
-# Prepare SSOM inputs for ONE year (Option B)
+# Prepare SSOM inputs for Each year/season 
 # ===============================================================
 
 # -----------------------------
@@ -16,7 +16,7 @@ library(tibble)
 # -----------------------------
 # 2. User-defined year 2008-2023
 # -----------------------------
-YEAR <- 2008   # <<< CHANGE THIS ONLY
+YEAR <- 2008   # <<< CHANGE THIS ONLY (REPEAT FOR THE DURATION 2008-2023)
 
 # -----------------------------
 # 3. File paths
@@ -68,12 +68,14 @@ climate <- read_csv(file.path(input_dir,
 
 road <- read_csv(file.path(input_dir,
                            "Hadeda_Accessibility_Data.csv"),
-                 show_col_types = FALSE)
+                 show_col_types = FALSE) %>%
+  rename(Road = RoadDistance)
 
 analysis_data <- sabap %>%
   left_join(climate, by = c("Pentad", "Year")) %>%
   left_join(road, by = "Pentad") %>%
-  drop_na()
+  drop_na() %>%
+  select(-StartTime, -EndDate, -CardNo, -ObserverNo)
 
 # -----------------------------
 # 6. Transform covariates
@@ -82,7 +84,7 @@ log_vars    <- c("TotalHours", "TotalSpp", "Rf", "Soil", "Road")
 spline_vars <- c("Tmax", "Tmin", "Rf", "Soil", "ndvi")
 
 numeric_vars <- analysis_data %>%
-  select(where(is.numeric)) %>%
+  select(TotalSpp, TotalHours,Road, Tmax, Tmin, Rf, Soil, ndvi, NV, WB, AG, UB, OTH) %>%
   names()
 
 transform_info <- list()
@@ -129,10 +131,15 @@ y <- analysis_data %>%
   group_by(Pentad) %>%
   mutate(visit = row_number()) %>%
   ungroup() %>%
-  pivot_wider(names_from = visit, values_from = Spp,
-              values_fill = list(Spp = 0)) %>%
+  pivot_wider(
+    id_cols   = Pentad,          # <<<<<< THIS IS THE FIX
+    names_from = visit,
+    values_from = Spp,
+    values_fill = list(Spp = 0)
+  ) %>%
   column_to_rownames("Pentad") %>%
   as.matrix()
+
 
 make_obs_matrix <- function(var) {
   analysis_data %>%
@@ -141,10 +148,15 @@ make_obs_matrix <- function(var) {
     group_by(Pentad) %>%
     mutate(visit = row_number()) %>%
     ungroup() %>%
-    pivot_wider(names_from = visit, values_from = value) %>%
+    pivot_wider(
+      id_cols   = Pentad,        # <<<<<< SAME FIX
+      names_from = visit,
+      values_from = value
+    ) %>%
     column_to_rownames("Pentad") %>%
     as.matrix()
 }
+
 
 obs_covs <- list(
   TotalHours_z = make_obs_matrix("TotalHours_z"),
@@ -153,10 +165,10 @@ obs_covs <- list(
 
 site_covs <- analysis_data %>%
   select(Pentad,
-         Tmax_spline1, Tmax_spline2,
-         Rf_spline1, Rf_spline2,
+         Tmax_spline1, Tmax_spline2, Tmin_spline1, Tmin_spline2,
+         Rf_spline1, Rf_spline2, Soil_spline1, Soil_spline2,
          ndvi_spline1, ndvi_spline2,
-         NV_z, AG_z, UB_z, WB_z, Road_z) %>%
+         NV_z, AG_z, UB_z, WB_z, OTH_z, Road_z) %>%
   distinct(Pentad, .keep_all = TRUE) %>%
   column_to_rownames("Pentad")
 
@@ -169,12 +181,14 @@ umf <- unmarkedFrameOccu(
   obsCovs  = obs_covs
 )
 
+summary(umf)
 # -----------------------------
 # 9. Save and stop
 # -----------------------------
 saveRDS(
   list(
     umf            = umf,
+    y              = y,
     site_covs      = site_covs,
     obs_covs       = obs_covs,
     transform_info = transform_info,
