@@ -133,6 +133,7 @@ y <- analysis_data %>%
   ungroup() %>%
   pivot_wider(
     id_cols   = Pentad,          # <<<<<< THIS IS THE FIX
+    id_cols   = Pentad,          
     names_from = visit,
     values_from = Spp,
     values_fill = list(Spp = 0)
@@ -149,7 +150,8 @@ make_obs_matrix <- function(var) {
     mutate(visit = row_number()) %>%
     ungroup() %>%
     pivot_wider(
-      id_cols   = Pentad,        # <<<<<< SAME FIX
+      id_cols   = Pentad,        # 
+      id_cols   = Pentad,        
       names_from = visit,
       values_from = value
     ) %>%
@@ -182,6 +184,7 @@ umf <- unmarkedFrameOccu(
 )
 
 summary(umf)
+
 # -----------------------------
 # 9. Save and stop
 # -----------------------------
