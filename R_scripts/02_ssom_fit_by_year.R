@@ -15,7 +15,7 @@ library(readr)
 library(AICcmodavg)
 
 # -----------------------------
-# 2. User-defined year
+# 2. season/ year
 # -----------------------------
 YEAR <- 2008   # <<< CHANGE THIS ONLY
 
