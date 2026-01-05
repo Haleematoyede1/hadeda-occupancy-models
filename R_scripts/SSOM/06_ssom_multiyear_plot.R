@@ -109,3 +109,7 @@ ggsave(
 )
 
 message("Representative SSOM occupancy maps saved successfully.")
+
+
+
+
