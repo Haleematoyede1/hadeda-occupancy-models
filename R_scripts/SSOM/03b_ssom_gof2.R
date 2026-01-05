@@ -10,12 +10,13 @@
 library(unmarked)
 library(dplyr)
 library(readr)
+library(AICcmodavg)
 
 # -----------------------------
 # 2. User-defined settings
 # -----------------------------
 YEAR  <- 2008        # <<< CHANGE OR LOOP LATER
-NSIM  <- 999         # Number of bootstrap simulations
+NSIM  <- 100         # Number of bootstrap simulations
 SEED  <- 123         # Reproducibility
 
 set.seed(SEED)
@@ -25,7 +26,7 @@ set.seed(SEED)
 # -----------------------------
 base_dir   <- getwd()
 
-input_mod  <- file.path(base_dir, "outputData/best_models")
+input_mod  <- file.path(base_dir, "outputData/SSOM/best_models")
 input_umf  <- file.path(base_dir, "outputData/SSOM/models")
 output_gof <- file.path(base_dir, "outputData/SSOM_GOF")
 
@@ -48,29 +49,48 @@ umf <- ssom_inputs$umf
 # 5. MacKenzie–Bailey GOF
 # -----------------------------
 mb_gof <- mb.gof.test(
-  object    = best_model,
+  mod       = best_model,
   nsim      = NSIM,
   plot.hist = FALSE
 )
 
+summary(best_model)
+
 # -----------------------------
 # 6. Extract GOF statistics
 # -----------------------------
-gof_summary <- tibble(
-  Year           = YEAR,
-  ChiSquare_obs  = mb_gof$Chi.square,
-  ChiSquare_mean = mean(mb_gof$Chi.square.sim),
-  p_value        = mb_gof$p.value,
-  chat           = mb_gof$Chi.square / mean(mb_gof$Chi.square.sim),
-  nsim           = NSIM
+gof_summary <- tibble::tibble(
+  Model_Type      = mb_gof$model.type,
+  Test            = "MacKenzie–Bailey GOF",
+  ChiSq_Observed  = mb_gof$chi.square,
+  ChiSq_Mean_Sim  = mean(mb_gof$t.star),
+  ChiSq_SD_Sim    = sd(mb_gof$t.star),
+  p_value         = mb_gof$p.value,
+  c_hat           = mb_gof$c.hat.est,
+  nsim            = mb_gof$nsim
 )
+
+
+
+gof_summary <- gof_summary %>%
+  mutate(
+    GOF_Informative = ifelse(
+      p_value > 0 & is.finite(c_hat) & c_hat < 10,
+      "Yes",
+      "No (sparse detection histories)"
+    )
+  )
 
 # -----------------------------
 # 7. Save results
 # -----------------------------
-write_csv(
+write.csv(
   gof_summary,
-  file.path(output_gof, paste0("SSOM_GOF_", YEAR, ".csv"))
+  file = file.path(
+    output_gof,
+    paste0("SSOM_GOF_summary_", YEAR, ".csv")
+  ),
+  row.names = FALSE
 )
 
 saveRDS(
